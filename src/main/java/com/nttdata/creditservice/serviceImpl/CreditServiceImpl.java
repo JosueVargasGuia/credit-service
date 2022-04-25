@@ -174,6 +174,7 @@ public class CreditServiceImpl implements CreditService {
 	 */
 	@Override
 	public Flux<MovementCredit> consultMovements(Long idCredit) {
+		log.info(movementCreditService);
 		ResponseEntity<List<MovementCredit>> responseGet = restTemplate.exchange(movementCreditService, HttpMethod.GET,
 				null, new ParameterizedTypeReference<List<MovementCredit>>() {
 				});
