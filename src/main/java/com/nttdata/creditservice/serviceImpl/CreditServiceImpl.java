@@ -14,6 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import com.nttdata.creditservice.FeignClient.CustomerFeignClient;
+import com.nttdata.creditservice.FeignClient.MovementCreditFeignClient;
+import com.nttdata.creditservice.FeignClient.ProductFeignClient;
+import com.nttdata.creditservice.FeignClient.TableIdFeignClient;
 import com.nttdata.creditservice.entity.Credit;
 import com.nttdata.creditservice.model.Customer;
 import com.nttdata.creditservice.model.MovementCredit;
@@ -35,6 +39,15 @@ public class CreditServiceImpl implements CreditService {
 	CreditRepository creditRepository;
 	@Autowired
 	RestTemplate restTemplate;
+
+	@Autowired
+	CustomerFeignClient customerFeignClient;
+	@Autowired
+	ProductFeignClient productFeignClient;
+	@Autowired
+	TableIdFeignClient tableIdFeignClient;
+	@Autowired
+	MovementCreditFeignClient movementCreditFeignClient;
 
 	@Value("${api.customer-service.uri}")
 	private String customerService;
@@ -60,6 +73,8 @@ public class CreditServiceImpl implements CreditService {
 		if (key >= 1) {
 			credit.setIdCredit(key);
 			log.info("SAVE[product]:" + credit.toString());
+		} else {
+			return Mono.error(new InterruptedException("Servicio no disponible:" + Credit.class.getSimpleName()));
 		}
 		return creditRepository.insert(credit);
 	}
@@ -87,9 +102,8 @@ public class CreditServiceImpl implements CreditService {
 	public Map<String, Object> registerAccountCredit(Credit credit) {
 		Map<String, Object> hashMap = new HashMap<String, Object>();
 		boolean isValid = true;
-		Product product = null;
-		if (this.findByIdProduct(credit.getIdProducto()) != null) {
-			product = this.findByIdProduct(credit.getIdProducto());
+		Product product = this.findByIdProduct(credit.getIdProducto());
+		if (product != null) {
 			if (product.getTypeProduct() == TypeProduct.pasivos) {
 				hashMap.put("Product", "El producto no es un activo para registrase como credito.");
 				isValid = false;
@@ -100,7 +114,6 @@ public class CreditServiceImpl implements CreditService {
 		}
 		Customer customer = this.findByIdCustomer(credit.getIdCustomer());
 		if (customer != null) {
-// customer = this.findByIdCustomer(credit.getIdCustomer());
 			if (customer.getTypeCustomer() == TypeCustomer.company) {
 				hashMap.put("Product", "El cliente no puede tener una cuenta de credito.");
 				isValid = false;
@@ -110,9 +123,7 @@ public class CreditServiceImpl implements CreditService {
 			isValid = false;
 		}
 		if (isValid) {
-//Mono.fromRunnable(() -> ).subscribe(e -> log.info("fromRunnable:" + e.toString()));
 			this.save(credit).map(e -> {
-
 				return Mono.just(hashMap);
 			}).subscribe();
 			hashMap.put("Credit", credit);
@@ -125,42 +136,26 @@ public class CreditServiceImpl implements CreditService {
 
 	@Override
 	public Product findByIdProduct(Long idProducto) {
-		ResponseEntity<Product> responseGet = restTemplate.exchange(productService + "/" + idProducto, HttpMethod.GET,
-				null, new ParameterizedTypeReference<Product>() {
-				});
-		if (responseGet.getStatusCode() == HttpStatus.OK) {
-			return responseGet.getBody();
-		} else {
-			return null;
-		}
-
+		/*
+		 * ResponseEntity<Product> responseGet = restTemplate.exchange(productService +
+		 * "/" + idProducto, HttpMethod.GET, null, new
+		 * ParameterizedTypeReference<Product>() { }); if (responseGet.getStatusCode()
+		 * == HttpStatus.OK) { return responseGet.getBody(); } else { return null; }
+		 */
+		return productFeignClient.findById(idProducto);
 	}
 
 	@Override
 	public Customer findByIdCustomer(Long idCustomer) {
 		log.info(customerService + "/" + idCustomer);
-		ResponseEntity<Customer> responseGet = restTemplate.exchange(customerService + "/" + idCustomer, HttpMethod.GET,
-				null, new ParameterizedTypeReference<Customer>() {
-				});
-		if (responseGet.getStatusCode() == HttpStatus.OK) {
-			return responseGet.getBody();
-		} else {
-			return null;
-		}
+		/*
+		 * ResponseEntity<Customer> responseGet = restTemplate.exchange(customerService
+		 * + "/" + idCustomer, HttpMethod.GET, null, new
+		 * ParameterizedTypeReference<Customer>() { }); if (responseGet.getStatusCode()
+		 * == HttpStatus.OK) { return responseGet.getBody(); } else { return null; }
+		 */
 
-		/*
-		 * Long idCustomer; TypeCustomer typeCustomer; String firstName; String
-		 * lastName; String emailAddress; String phoneNumber; String homeAddress; String
-		 * document; TypeDocumento typeDocumento;
-		 */
-		/*
-		 * if (idCustomer == 1) { return new Customer(idCustomer, TypeCustomer.personal,
-		 * "Josue", "Vargas Guia", "josue@nttdata.com", "941451121", "jr.- calle",
-		 * "45519040", TypeDocumento.dni); } else if (idCustomer == 2) { return new
-		 * Customer(idCustomer, TypeCustomer.empresarial, "Josue", "Vargas Guia",
-		 * "josue@nttdata.com", "941451121", "jr.- calle", "45519040",
-		 * TypeDocumento.dni); } else { return null; }
-		 */
+		return customerFeignClient.customerfindById(idCustomer);
 
 	}
 
@@ -175,30 +170,28 @@ public class CreditServiceImpl implements CreditService {
 	@Override
 	public Flux<MovementCredit> consultMovements(Long idCredit) {
 		log.info(movementCreditService);
-		ResponseEntity<List<MovementCredit>> responseGet = restTemplate.exchange(movementCreditService, HttpMethod.GET,
-				null, new ParameterizedTypeReference<List<MovementCredit>>() {
-				});
-		List<MovementCredit> list;
-		if (responseGet.getStatusCode() == HttpStatus.OK) {
-			list = responseGet.getBody();
-			return Flux.fromIterable(list).filter(movementCredit -> movementCredit.getIdCredit() == idCredit);
-		} else {
-			return Flux.empty();
-		}
-
+		/*
+		 * ResponseEntity<List<MovementCredit>> responseGet =
+		 * restTemplate.exchange(movementCreditService, HttpMethod.GET, null, new
+		 * ParameterizedTypeReference<List<MovementCredit>>() { }); List<MovementCredit>
+		 * list; if (responseGet.getStatusCode() == HttpStatus.OK) { list =
+		 * responseGet.getBody(); return Flux.fromIterable(list).filter(movementCredit
+		 * -> movementCredit.getIdCredit() == idCredit); } else { return Flux.empty(); }
+		 */
+		return Flux.fromIterable(movementCreditFeignClient.findAll())
+				.filter(movementCredit -> movementCredit.getIdCredit() == idCredit).switchIfEmpty(Flux.empty());
 	}
 
 	@Override
 	public Long generateKey(String nameTable) {
 		log.info(tableIdService + "/generateKey/" + nameTable);
-		ResponseEntity<Long> responseGet = restTemplate.exchange(tableIdService + "/generateKey/" + nameTable,
-				HttpMethod.GET, null, new ParameterizedTypeReference<Long>() {
-				});
-		if (responseGet.getStatusCode() == HttpStatus.OK) {
-			log.info("Body:" + responseGet.getBody());
-			return responseGet.getBody();
-		} else {
-			return Long.valueOf(0);
-		}
+		/*
+		 * ResponseEntity<Long> responseGet = restTemplate.exchange(tableIdService +
+		 * "/generateKey/" + nameTable, HttpMethod.GET, null, new
+		 * ParameterizedTypeReference<Long>() { }); if (responseGet.getStatusCode() ==
+		 * HttpStatus.OK) { log.info("Body:" + responseGet.getBody()); return
+		 * responseGet.getBody(); } else { return Long.valueOf(0); }-
+		 */
+		return tableIdFeignClient.generateKey(nameTable);
 	}
 }
