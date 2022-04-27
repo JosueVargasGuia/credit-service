@@ -10,13 +10,13 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "credit")
-public class Credit {
+@AllArgsConstructor
+@Document(collection = "CreditAccount")
+public final class CreditAccount extends Account {
 	@Id
-	Long idCredit;
-	Long idCustomer;
-	Long idProducto;
-	Double amountCreditLimit;
+	private Long idCreditAccount;
+	private Long idProducto;
+	private Double amountCreditLimit;
+	//private Long idAccount;
 }

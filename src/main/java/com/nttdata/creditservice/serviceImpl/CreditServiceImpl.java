@@ -1,29 +1,25 @@
 package com.nttdata.creditservice.serviceImpl;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap; 
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value; 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.nttdata.creditservice.FeignClient.CustomerFeignClient;
 import com.nttdata.creditservice.FeignClient.MovementCreditFeignClient;
 import com.nttdata.creditservice.FeignClient.ProductFeignClient;
 import com.nttdata.creditservice.FeignClient.TableIdFeignClient;
-import com.nttdata.creditservice.entity.Credit;
+import com.nttdata.creditservice.entity.Account;
+import com.nttdata.creditservice.entity.CreditAccount;
 import com.nttdata.creditservice.model.Customer;
 import com.nttdata.creditservice.model.MovementCredit;
 import com.nttdata.creditservice.model.Product;
-import com.nttdata.creditservice.model.TypeCustomer;
-import com.nttdata.creditservice.model.TypeDocumento;
+import com.nttdata.creditservice.model.TypeCustomer; 
 import com.nttdata.creditservice.model.TypeProduct;
 import com.nttdata.creditservice.repository.CreditRepository;
 import com.nttdata.creditservice.service.CreditService;
@@ -62,36 +58,45 @@ public class CreditServiceImpl implements CreditService {
 	String tableIdService;
 
 	@Override
-	public Flux<Credit> findAll() {
+	public Flux<CreditAccount> findAll() {
 		return creditRepository.findAll()
-				.sort((credit1, credit2) -> credit1.getIdCredit().compareTo(credit2.getIdCredit()));
+				.sort((credit1, credit2) -> credit1.getIdCreditAccount().compareTo(credit2.getIdCreditAccount()));
 	}
 
 	@Override
-	public Mono<Credit> save(Credit credit) {
-		Long key = generateKey(Credit.class.getSimpleName());
-		if (key >= 1) {
-			credit.setIdCredit(key);
-			log.info("SAVE[product]:" + credit.toString());
+	public Mono<CreditAccount> save(CreditAccount creditAccount) {
+		Long idCreditAccount = generateKey(CreditAccount.class.getSimpleName());
+		if (idCreditAccount >= 1) {
+			creditAccount.setIdCreditAccount(idCreditAccount);	
+			creditAccount.setCreationDate(Calendar.getInstance().getTime());
 		} else {
-			return Mono.error(new InterruptedException("Servicio no disponible:" + Credit.class.getSimpleName()));
+			return Mono.error(new InterruptedException("Servicio no disponible:" + CreditAccount.class.getSimpleName()));
 		}
-		return creditRepository.insert(credit);
+		
+		Long idAccount = generateKey(Account.class.getSimpleName());
+		if (idAccount >= 1) {
+			creditAccount.setIdAccount(idAccount);			
+		} else {
+			return Mono.error(new InterruptedException("Servicio no disponible:" + Account.class.getSimpleName()));
+		}
+		
+		log.info("SAVE[product]:" + creditAccount.toString());
+		return creditRepository.insert(creditAccount);
 	}
 
 	@Override
-	public Mono<Credit> findById(Long idCredit) {
-		return creditRepository.findById(idCredit);
+	public Mono<CreditAccount> findById(Long idCreditAccount) {
+		return creditRepository.findById(idCreditAccount);
 	}
 
 	@Override
-	public Mono<Credit> update(Credit credit) {
-		return creditRepository.save(credit);
+	public Mono<CreditAccount> update(CreditAccount creditAccount) {
+		return creditRepository.save(creditAccount);
 	}
 
 	@Override
-	public Mono<Void> delete(Long idCredit) {
-		return creditRepository.deleteById(idCredit);
+	public Mono<Void> delete(Long idCreditAccount) {
+		return creditRepository.deleteById(idCreditAccount);
 	}
 
 	/*
@@ -99,10 +104,10 @@ public class CreditServiceImpl implements CreditService {
 	 * de tener una cuenta bancaria en la instituci�n<br/>
 	 */
 	@Override
-	public Map<String, Object> registerAccountCredit(Credit credit) {
+	public Map<String, Object> registerAccountCredit(CreditAccount creditAccount) {
 		Map<String, Object> hashMap = new HashMap<String, Object>();
 		boolean isValid = true;
-		Product product = this.findByIdProduct(credit.getIdProducto());
+		Product product = this.findByIdProduct(creditAccount.getIdProducto());
 		if (product != null) {
 			if (product.getTypeProduct() == TypeProduct.pasivos) {
 				hashMap.put("Product", "El producto no es un activo para registrase como credito.");
@@ -112,7 +117,7 @@ public class CreditServiceImpl implements CreditService {
 			hashMap.put("Product", "Producto no encontrado.");
 			isValid = false;
 		}
-		Customer customer = this.findByIdCustomer(credit.getIdCustomer());
+		Customer customer = this.findByIdCustomer(creditAccount.getIdCustomer());
 		if (customer != null) {
 			if (customer.getTypeCustomer() == TypeCustomer.company) {
 				hashMap.put("Product", "El cliente no puede tener una cuenta de credito.");
@@ -123,10 +128,10 @@ public class CreditServiceImpl implements CreditService {
 			isValid = false;
 		}
 		if (isValid) {
-			this.save(credit).map(e -> {
+			this.save(creditAccount).map(e -> {
 				return Mono.just(hashMap);
 			}).subscribe();
-			hashMap.put("Credit", credit);
+			hashMap.put("Credit", creditAccount);
 			return hashMap;
 		}
 		log.info(hashMap.toString());
@@ -168,7 +173,7 @@ public class CreditServiceImpl implements CreditService {
 	 * } }
 	 */
 	@Override
-	public Flux<MovementCredit> consultMovements(Long idCredit) {
+	public Flux<MovementCredit> consultMovements(Long idCreditAccount) {
 		log.info(movementCreditService);
 		/*
 		 * ResponseEntity<List<MovementCredit>> responseGet =
@@ -179,7 +184,7 @@ public class CreditServiceImpl implements CreditService {
 		 * -> movementCredit.getIdCredit() == idCredit); } else { return Flux.empty(); }
 		 */
 		return Flux.fromIterable(movementCreditFeignClient.findAll())
-				.filter(movementCredit -> movementCredit.getIdCredit() == idCredit).switchIfEmpty(Flux.empty());
+				.filter(movementCredit -> movementCredit.getIdCreditAccount() == idCreditAccount).switchIfEmpty(Flux.empty());
 	}
 
 	@Override
