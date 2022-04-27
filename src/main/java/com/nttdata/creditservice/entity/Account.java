@@ -1,4 +1,4 @@
-package com.nttdata.creditservice.model;
+package com.nttdata.creditservice.entity;
 
 import java.util.Date;
 
@@ -17,20 +17,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@AllArgsConstructor 
 @Data
-@Document(collection = "products")
-public class Product {
-	@Id
-	private Long idProducto;
-	private String descriptionProducto;
-	private TypeProduct typeProduct;
-	private Long idConfiguration;
-	private ProductId productId;
+//@Document(collection = "account")
+public abstract class Account {	 
+	private Long idAccount;
+	private Long idCustomer;
+	private typeOfCurrency typeOfCurrency;
+	private String accountNumber;
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss") 
 	private Date creationDate;
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss")
 	private Date dateModified;
-	
 }

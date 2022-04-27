@@ -1,8 +1,8 @@
 package com.nttdata.creditservice.service;
 
 import java.util.Map;
-
-import com.nttdata.creditservice.entity.Credit;
+ 
+import com.nttdata.creditservice.entity.CreditAccount;
 import com.nttdata.creditservice.model.Customer;
 import com.nttdata.creditservice.model.MovementCredit;
 import com.nttdata.creditservice.model.Product;
@@ -12,17 +12,17 @@ import reactor.core.publisher.Mono;
 
 public interface CreditService {
 
-	Flux<Credit> findAll();
+	Flux<CreditAccount> findAll();
 
-	Mono<Credit> findById(Long idCredit);
+	Mono<CreditAccount> findById(Long idCreditAccount);
 
-	Mono<Credit> save(Credit credit);
+	Mono<CreditAccount> save(CreditAccount creditAccount);
 
-	Mono<Credit> update(Credit credit);
+	Mono<CreditAccount> update(CreditAccount creditAccount);
 
-	Mono<Void> delete(Long idCredit);
+	Mono<Void> delete(Long idCreditAccount);
 
-	Map<String, Object> registerAccountCredit(Credit credit);
+	Map<String, Object> registerAccountCredit(CreditAccount creditAccount);
 
 	Product findByIdProduct(Long idProducto);
 
@@ -30,7 +30,7 @@ public interface CreditService {
 
 	// Mono<Map<String, Object>> consultMovements(Long idCredit);
 
-	Flux<MovementCredit> consultMovements(Long idCredit);
+	Flux<MovementCredit> consultMovements(Long idCreditAccount);
 
 	Long generateKey(String nameTable);
 
