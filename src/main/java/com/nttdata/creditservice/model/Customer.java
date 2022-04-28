@@ -20,10 +20,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Data
-@Document(collection="customers")
+//@Document(collection="customers")
 public class Customer {
 	
-	@Id
+	 
 	private Long idCustomer;
 	private String firstname;
 	private String lastname;

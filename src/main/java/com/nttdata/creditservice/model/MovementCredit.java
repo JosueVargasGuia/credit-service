@@ -19,9 +19,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Data
-@Document(collection = "movement_credit")
+//@Document(collection = "movement_credit")
 public class MovementCredit {
-	@Id
+	//@Id
 	private Long IdMovementCredit;
 	private Long idCreditAccount;
 	private double amount;

@@ -120,7 +120,7 @@ public class CreditServiceImpl implements CreditService {
 		Customer customer = this.findByIdCustomer(creditAccount.getIdCustomer());
 		if (customer != null) {
 			if (customer.getTypeCustomer() == TypeCustomer.company) {
-				hashMap.put("Product", "El cliente no puede tener una cuenta de credito.");
+				hashMap.put("Customer", "El cliente no puede tener una cuenta de credito.");
 				isValid = false;
 			}
 		} else {
@@ -131,7 +131,7 @@ public class CreditServiceImpl implements CreditService {
 			this.save(creditAccount).map(e -> {
 				return Mono.just(hashMap);
 			}).subscribe();
-			hashMap.put("Credit", creditAccount);
+			hashMap.put("CreditAccount", creditAccount);
 			return hashMap;
 		}
 		log.info(hashMap.toString());
