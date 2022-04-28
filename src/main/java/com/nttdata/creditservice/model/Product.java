@@ -20,9 +20,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Data
-@Document(collection = "products")
+//@Document(collection = "products")
 public class Product {
-	@Id
+	//@Id
 	private Long idProducto;
 	private String descriptionProducto;
 	private TypeProduct typeProduct;
