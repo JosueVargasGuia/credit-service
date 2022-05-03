@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.nttdata.creditservice.entity.CreditAccount;
+import com.nttdata.creditservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.creditservice.model.MovementCredit;
 import com.nttdata.creditservice.service.CreditService;
 
@@ -90,5 +91,11 @@ public class CreditController {
 	public Flux<MovementCredit> consultMovements(@PathVariable(name = "idCreditAccount") Long idCreditAccount) {
 		return creditService.consultMovements(idCreditAccount);
 
+	}
+
+	@GetMapping("/findProductByIdCustomer/{idCustomer}")
+	public Flux<ConsolidatedCustomerProducts> findProductByIdCustomer(
+			@PathVariable(name = "idCustomer") Long idCustomer) {
+		return creditService.findProductByIdCustomer(idCustomer);
 	}
 }

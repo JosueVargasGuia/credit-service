@@ -16,9 +16,11 @@ import com.nttdata.creditservice.FeignClient.ProductFeignClient;
 import com.nttdata.creditservice.FeignClient.TableIdFeignClient;
 import com.nttdata.creditservice.entity.Account;
 import com.nttdata.creditservice.entity.CreditAccount;
+import com.nttdata.creditservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.creditservice.model.Customer;
 import com.nttdata.creditservice.model.MovementCredit;
 import com.nttdata.creditservice.model.Product;
+import com.nttdata.creditservice.model.TypeAccount;
 import com.nttdata.creditservice.model.TypeCustomer; 
 import com.nttdata.creditservice.model.TypeProduct;
 import com.nttdata.creditservice.repository.CreditRepository;
@@ -107,7 +109,7 @@ public class CreditServiceImpl implements CreditService {
 	public Map<String, Object> registerAccountCredit(CreditAccount creditAccount) {
 		Map<String, Object> hashMap = new HashMap<String, Object>();
 		boolean isValid = true;
-		Product product = this.findByIdProduct(creditAccount.getIdProducto());
+		Product product = this.findByIdProduct(creditAccount.getIdProduct());
 		if (product != null) {
 			if (product.getTypeProduct() == TypeProduct.pasivos) {
 				hashMap.put("Product", "El producto no es un activo para registrase como credito.");
@@ -140,14 +142,14 @@ public class CreditServiceImpl implements CreditService {
 	}
 
 	@Override
-	public Product findByIdProduct(Long idProducto) {
+	public Product findByIdProduct(Long idProduct) {
 		/*
 		 * ResponseEntity<Product> responseGet = restTemplate.exchange(productService +
 		 * "/" + idProducto, HttpMethod.GET, null, new
 		 * ParameterizedTypeReference<Product>() { }); if (responseGet.getStatusCode()
 		 * == HttpStatus.OK) { return responseGet.getBody(); } else { return null; }
 		 */
-		return productFeignClient.findById(idProducto);
+		return productFeignClient.findById(idProduct);
 	}
 
 	@Override
@@ -198,5 +200,20 @@ public class CreditServiceImpl implements CreditService {
 		 * responseGet.getBody(); } else { return Long.valueOf(0); }-
 		 */
 		return tableIdFeignClient.generateKey(nameTable);
+	}
+
+	@Override
+	public Flux<ConsolidatedCustomerProducts> findProductByIdCustomer(Long idCustomer) {
+		return this.findAll().filter(e->e.getIdCustomer()==idCustomer)
+		 .map(obj->{
+			 ConsolidatedCustomerProducts objT=new ConsolidatedCustomerProducts();
+			 objT.setProduct(productFeignClient.findById(obj.getIdProduct()));
+			 objT.setTypeAccount(TypeAccount.CreditAccount);
+			 objT.setIdAccount(obj.getIdCustomer());
+			 objT.setIdCreditAccount(obj.getIdCreditAccount());
+			 objT.setIdCustomer(idCustomer);
+			 return objT;
+		 });
+		 
 	}
 }
