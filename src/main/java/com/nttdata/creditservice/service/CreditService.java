@@ -3,6 +3,7 @@ package com.nttdata.creditservice.service;
 import java.util.Map;
  
 import com.nttdata.creditservice.entity.CreditAccount;
+import com.nttdata.creditservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.creditservice.model.Customer;
 import com.nttdata.creditservice.model.MovementCredit;
 import com.nttdata.creditservice.model.Product;
@@ -33,5 +34,6 @@ public interface CreditService {
 	Flux<MovementCredit> consultMovements(Long idCreditAccount);
 
 	Long generateKey(String nameTable);
-
+	
+	Flux<ConsolidatedCustomerProducts> findProductByIdCustomer(Long idCustomer);
 }

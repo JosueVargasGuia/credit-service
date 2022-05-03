@@ -16,7 +16,7 @@ import lombok.Setter;
 public final class CreditAccount extends Account {
 	@Id
 	private Long idCreditAccount;
-	private Long idProducto;
+	private Long idProduct;
 	private Double amountCreditLimit;
 	//private Long idAccount;
 }
