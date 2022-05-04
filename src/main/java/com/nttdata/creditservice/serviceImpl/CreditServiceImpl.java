@@ -4,6 +4,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap; 
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,8 @@ import com.nttdata.creditservice.model.Customer;
 import com.nttdata.creditservice.model.MovementCredit;
 import com.nttdata.creditservice.model.Product;
 import com.nttdata.creditservice.model.TypeAccount;
-import com.nttdata.creditservice.model.TypeCustomer; 
+import com.nttdata.creditservice.model.TypeCustomer;
+import com.nttdata.creditservice.model.TypeMovementCredit;
 import com.nttdata.creditservice.model.TypeProduct;
 import com.nttdata.creditservice.repository.CreditRepository;
 import com.nttdata.creditservice.service.CreditService;
@@ -129,13 +132,42 @@ public class CreditServiceImpl implements CreditService {
 			hashMap.put("Customer", "El Cliente no existe.");
 			isValid = false;
 		}
-		if (isValid) {
-			this.save(creditAccount).map(e -> {
-				return Mono.just(hashMap);
-			}).subscribe();
-			hashMap.put("CreditAccount", creditAccount);
-			return hashMap;
+		
+		/**
+		 * Variables para obtener el total de cargos y abonos a la cuenta de credito
+		 * */
+		double charge = this.movementCreditFeignClient.findAll()
+			.stream()
+			.filter(movCred -> movCred.getTypeMovementCredit()== TypeMovementCredit.charge)
+			.collect(Collectors.summingDouble(MovementCredit::getAmount));
+		
+		double payment = this.movementCreditFeignClient.findAll()
+				.stream()
+				.filter(movCred -> movCred.getTypeMovementCredit()== TypeMovementCredit.payment)
+				.collect(Collectors.summingDouble(MovementCredit::getAmount));
+		
+		log.info("creditAccount: "+creditAccount.getIdCreditAccount());
+		
+		//variable deuda, resultado de los cargos menos los abonos registrados en la cuenta de credito
+		double debt = charge-payment;
+		
+		if(charge>payment) {
+			hashMap.put("ErrorCreditAccount", "No es posible abrir una cuenta, tiene una deuda de "+ debt );
+		}else {
+			if (isValid) {
+				this.save(creditAccount).map(e -> {
+					return Mono.just(hashMap);
+				}).subscribe();
+				
+				hashMap.put("CreditAccount", creditAccount);
+				
+				return hashMap;
+			}
 		}
+		
+		log.info("payment: "+ payment + "charge: "+ charge);
+			
+		
 		log.info(hashMap.toString());
 		return hashMap;
 
