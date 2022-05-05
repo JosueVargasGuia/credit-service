@@ -2,9 +2,6 @@ package com.nttdata.creditservice.model;
 
 import java.util.Date;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
@@ -20,9 +17,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Data
-//@Document(collection="customers")
 public class Customer {
-	
 	 
 	private Long idCustomer;
 	private String firstname;
@@ -37,8 +32,5 @@ public class Customer {
 	private Date creationDate;
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss")
 	private Date dateModified;
-	
-	
-	
 	
 }

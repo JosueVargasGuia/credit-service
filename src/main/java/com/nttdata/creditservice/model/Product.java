@@ -2,9 +2,6 @@ package com.nttdata.creditservice.model;
 
 import java.util.Date;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
@@ -20,9 +17,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Data
-//@Document(collection = "products")
 public class Product {
-	//@Id
+	
 	private Long idProducto;
 	private String descriptionProducto;
 	private TypeProduct typeProduct;
