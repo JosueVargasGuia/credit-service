@@ -7,7 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
+@ToString
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,5 +20,4 @@ public final class CreditAccount extends Account {
 	private Long idCreditAccount;
 	private Long idProduct;
 	private Double amountCreditLimit;
-	//private Long idAccount;
 }

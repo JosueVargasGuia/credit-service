@@ -1,17 +1,15 @@
 package com.nttdata.creditservice.serviceImpl;
 
 import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap; 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value; 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import com.nttdata.creditservice.FeignClient.CustomerFeignClient;
 import com.nttdata.creditservice.FeignClient.MovementCreditFeignClient;
 import com.nttdata.creditservice.FeignClient.ProductFeignClient;
@@ -29,12 +27,13 @@ import com.nttdata.creditservice.model.TypeProduct;
 import com.nttdata.creditservice.repository.CreditRepository;
 import com.nttdata.creditservice.service.CreditService;
 
+import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Log4j2
 @Service
 public class CreditServiceImpl implements CreditService {
-	Logger log = LoggerFactory.getLogger(CreditServiceImpl.class);
 
 	@Autowired
 	CreditRepository creditRepository;
@@ -72,19 +71,20 @@ public class CreditServiceImpl implements CreditService {
 	public Mono<CreditAccount> save(CreditAccount creditAccount) {
 		Long idCreditAccount = generateKey(CreditAccount.class.getSimpleName());
 		if (idCreditAccount >= 1) {
-			creditAccount.setIdCreditAccount(idCreditAccount);	
+			creditAccount.setIdCreditAccount(idCreditAccount);
 			creditAccount.setCreationDate(Calendar.getInstance().getTime());
 		} else {
-			return Mono.error(new InterruptedException("Servicio no disponible:" + CreditAccount.class.getSimpleName()));
+			return Mono
+					.error(new InterruptedException("Servicio no disponible:" + CreditAccount.class.getSimpleName()));
 		}
-		
+
 		Long idAccount = generateKey(Account.class.getSimpleName());
 		if (idAccount >= 1) {
-			creditAccount.setIdAccount(idAccount);			
+			creditAccount.setIdAccount(idAccount);
 		} else {
 			return Mono.error(new InterruptedException("Servicio no disponible:" + Account.class.getSimpleName()));
 		}
-		
+
 		log.info("SAVE[product]:" + creditAccount.toString());
 		return creditRepository.insert(creditAccount);
 	}
@@ -132,42 +132,38 @@ public class CreditServiceImpl implements CreditService {
 			hashMap.put("Customer", "El Cliente no existe.");
 			isValid = false;
 		}
-		
+
 		/**
-		 * Variables para obtener el total de cargos y abonos a la cuenta de credito
-		 * */
-		double charge = this.movementCreditFeignClient.findAll()
-			.stream()
-			.filter(movCred -> movCred.getTypeMovementCredit()== TypeMovementCredit.charge)
-			.collect(Collectors.summingDouble(MovementCredit::getAmount));
-		
-		double payment = this.movementCreditFeignClient.findAll()
-				.stream()
-				.filter(movCred -> movCred.getTypeMovementCredit()== TypeMovementCredit.payment)
+		 * Variables para obtener el total de cargos y abonos a la cuenta de credito segun el cliente de la cuenta
+		 */
+		double charge = this.movementCreditFeignClient.findAllByCustomer(creditAccount.getIdCustomer()).stream()
+				.filter(movCred -> movCred.getTypeMovementCredit() == TypeMovementCredit.charge)
 				.collect(Collectors.summingDouble(MovementCredit::getAmount));
-		
-		log.info("creditAccount: "+creditAccount.getIdCreditAccount());
-		
-		//variable deuda, resultado de los cargos menos los abonos registrados en la cuenta de credito
-		double debt = charge-payment;
-		
-		if(charge>payment) {
-			hashMap.put("ErrorCreditAccount", "No es posible abrir una cuenta, tiene una deuda de "+ debt );
-		}else {
+
+		double payment = this.movementCreditFeignClient.findAllByCustomer(creditAccount.getIdCustomer()).stream()
+				.filter(movCred -> movCred.getTypeMovementCredit() == TypeMovementCredit.payment)
+				.collect(Collectors.summingDouble(MovementCredit::getAmount));
+
+		// variable deuda, resultado de los cargos menos los abonos registrados en la
+		// cuenta de credito
+		double debt = charge - payment;
+
+		if (charge > payment) {
+			hashMap.put("ErrorCreditAccount", "No es posible abrir una cuenta, tiene una deuda de " + debt);
+		} else {
 			if (isValid) {
 				this.save(creditAccount).map(e -> {
 					return Mono.just(hashMap);
 				}).subscribe();
-				
+
 				hashMap.put("CreditAccount", creditAccount);
-				
+
 				return hashMap;
 			}
 		}
-		
-		log.info("payment: "+ payment + "charge: "+ charge);
-			
-		
+
+		log.info("payment: " + payment + "charge: " + charge);
+
 		log.info(hashMap.toString());
 		return hashMap;
 
@@ -218,7 +214,8 @@ public class CreditServiceImpl implements CreditService {
 		 * -> movementCredit.getIdCredit() == idCredit); } else { return Flux.empty(); }
 		 */
 		return Flux.fromIterable(movementCreditFeignClient.findAll())
-				.filter(movementCredit -> movementCredit.getIdCreditAccount() == idCreditAccount).switchIfEmpty(Flux.empty());
+				.filter(movementCredit -> movementCredit.getIdCreditAccount() == idCreditAccount)
+				.switchIfEmpty(Flux.empty());
 	}
 
 	@Override
@@ -236,16 +233,15 @@ public class CreditServiceImpl implements CreditService {
 
 	@Override
 	public Flux<ConsolidatedCustomerProducts> findProductByIdCustomer(Long idCustomer) {
-		return this.findAll().filter(e->e.getIdCustomer()==idCustomer)
-		 .map(obj->{
-			 ConsolidatedCustomerProducts objT=new ConsolidatedCustomerProducts();
-			 objT.setProduct(productFeignClient.findById(obj.getIdProduct()));
-			 objT.setTypeAccount(TypeAccount.CreditAccount);
-			 objT.setIdAccount(obj.getIdCustomer());
-			 objT.setIdCreditAccount(obj.getIdCreditAccount());
-			 objT.setIdCustomer(idCustomer);
-			 return objT;
-		 });
-		 
+		return this.findAll().filter(e -> e.getIdCustomer() == idCustomer).map(obj -> {
+			ConsolidatedCustomerProducts objT = new ConsolidatedCustomerProducts();
+			objT.setProduct(productFeignClient.findById(obj.getIdProduct()));
+			objT.setTypeAccount(TypeAccount.CreditAccount);
+			objT.setIdAccount(obj.getIdCustomer());
+			objT.setIdCreditAccount(obj.getIdCreditAccount());
+			objT.setIdCustomer(idCustomer);
+			return objT;
+		});
+
 	}
 }
