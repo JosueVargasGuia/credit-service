@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -243,5 +244,11 @@ public class CreditServiceImpl implements CreditService {
 			return objT;
 		});
 
+	}
+
+	@Override
+	public Mono<CreditAccount> findByIdForExample(CreditAccount creditAccount) {
+		Example<CreditAccount> example = Example.of(creditAccount); 		
+		return creditRepository.findOne(example);
 	}
 }

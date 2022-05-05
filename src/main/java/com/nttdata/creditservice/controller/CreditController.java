@@ -1,6 +1,7 @@
 package com.nttdata.creditservice.controller;
 
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.nttdata.creditservice.entity.CreditAccount;
 import com.nttdata.creditservice.model.ConsolidatedCustomerProducts;
 import com.nttdata.creditservice.model.MovementCredit;
@@ -97,5 +99,10 @@ public class CreditController {
 	public Flux<ConsolidatedCustomerProducts> findProductByIdCustomer(
 			@PathVariable(name = "idCustomer") Long idCustomer) {
 		return creditService.findProductByIdCustomer(idCustomer);
+	}
+	
+	@PostMapping("/findByIdForExample")
+	public Mono<CreditAccount> findByIdForExample(@RequestBody CreditAccount creditAccount){
+		return creditService.findByIdForExample(creditAccount);
 	}
 }
