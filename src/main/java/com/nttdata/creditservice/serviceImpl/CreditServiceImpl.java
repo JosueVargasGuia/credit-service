@@ -1,6 +1,5 @@
 package com.nttdata.creditservice.serviceImpl;
-
-import java.util.Calendar;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -11,6 +10,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+ 
 import com.nttdata.creditservice.FeignClient.CustomerFeignClient;
 import com.nttdata.creditservice.FeignClient.MovementCreditFeignClient;
 import com.nttdata.creditservice.FeignClient.ProductFeignClient;
@@ -70,23 +70,28 @@ public class CreditServiceImpl implements CreditService {
 
 	@Override
 	public Mono<CreditAccount> save(CreditAccount creditAccount) {
-		Long idCreditAccount = generateKey(CreditAccount.class.getSimpleName());
-		if (idCreditAccount >= 1) {
-			creditAccount.setIdCreditAccount(idCreditAccount);
-			creditAccount.setCreationDate(Calendar.getInstance().getTime());
+		Long count = this.findAll().collect(Collectors.counting()).blockOptional().get();
+		Long idCreditAccount;
+		if (count != null) {
+			if (count <= 0) {
+				idCreditAccount = Long.valueOf(0);
+			} else {
+				idCreditAccount = this.findAll().collect(Collectors.maxBy(Comparator.comparing(CreditAccount::getIdCreditAccount)))
+						.blockOptional().get().get().getIdCreditAccount();
+			}
 		} else {
-			return Mono
-					.error(new InterruptedException("Servicio no disponible:" + CreditAccount.class.getSimpleName()));
+			idCreditAccount = Long.valueOf(0);
 		}
 
 		Long idAccount = generateKey(Account.class.getSimpleName());
-		if (idAccount >= 1) {
+		if (idAccount <= 0) {
 			creditAccount.setIdAccount(idAccount);
 		} else {
 			return Mono.error(new InterruptedException("Servicio no disponible:" + Account.class.getSimpleName()));
 		}
 
 		log.info("SAVE[product]:" + creditAccount.toString());
+		creditAccount.setIdCreditAccount(idCreditAccount);
 		return creditRepository.insert(creditAccount);
 	}
 
